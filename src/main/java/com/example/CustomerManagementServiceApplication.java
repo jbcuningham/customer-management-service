@@ -1,5 +1,6 @@
 package com.example;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -22,6 +23,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import java.util.stream.Stream;
 
+
+
 @EnableBinding(Sink.class)
 @EnableEurekaClient
 @SpringBootApplication
@@ -32,15 +35,20 @@ public class CustomerManagementServiceApplication {
     }
 }
 
+@RepositoryRestResource
+interface CustomerRepository extends JpaRepository<Customer, Long> {
+
+}
+
 @MessageEndpoint
 class CustomerProcessor {
-
-    private final CustomerRepository customerRepository;
 
     @ServiceActivator(inputChannel = "input")
     public void acceptNewCustomers(String cn) {
         this.customerRepository.save(new Customer(cn));
     }
+
+    private final CustomerRepository customerRepository;
 
     @Autowired
     public CustomerProcessor(CustomerRepository customerRepository) {
@@ -82,17 +90,20 @@ class MessageRestController {
     }
 }
 
-@RepositoryRestResource
-interface CustomerRepository extends JpaRepository<Customer, Long> {
-
-}
-
 @Entity
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Customer {
     @Id
     @GeneratedValue
     private Long id;
     private String customerName;
+
+    public Customer() {
+    }
+
+    public Customer(String customerName) {
+        this.customerName = customerName;
+    }
 
     public Long getId() {
         return id;
@@ -107,13 +118,6 @@ class Customer {
     }
 
     public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
-    public Customer() {
-    }
-
-    public Customer(String customerName) {
         this.customerName = customerName;
     }
 
